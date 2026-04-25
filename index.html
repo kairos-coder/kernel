@@ -2,866 +2,216 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kairos Kernel · Divine Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Kairos Kernel · v1.0</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Cinzel:wght@400;600&display=swap');
-
-        :root {
-            --bg-void:      #060810;
-            --bg-deep:      #0a0c14;
-            --bg-panel:     #0d1020;
-            --bg-card:      #111525;
-            --bg-hover:     #1a1f35;
-            --border:       #1e2540;
-            --border-lit:   #2a3360;
-
-            --hermes:   #d4956a;
-            --apollo:   #c9a84c;
-            --heph:     #e07040;
-            --demeter:  #6b9e5e;
-            --poseidon: #4a8fbf;
-            --athena:   #9b7ec8;
-            --zeus:     #e8d068;
-
-            --text-primary:   #d4e0f0;
-            --text-secondary: #6a7a9a;
-            --text-dim:       #3a4560;
-
-            --pulse: #ffffff18;
-        }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
         body {
-            background: var(--bg-void);
-            font-family: 'Share Tech Mono', 'Courier New', monospace;
-            color: var(--text-primary);
-            min-height: 100vh;
-            overflow-x: hidden;
+            background: #0a0c12;
+            font-family: 'SF Mono', 'Courier New', monospace;
+            padding: 1.5rem;
+            color: #d4e0ed;
         }
-
-        /* ── BACKGROUND GRID ── */
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(var(--border) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border) 1px, transparent 1px);
-            background-size: 48px 48px;
-            opacity: 0.18;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        /* ── LAYOUT ── */
-        .wrapper {
-            position: relative;
-            z-index: 1;
-            max-width: 1600px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
-        /* ── HEADER ── */
-        header {
-            display: flex;
-            align-items: flex-start;
-            justify-content: space-between;
-            margin-bottom: 2.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .header-left h1 {
-            font-family: 'Cinzel', serif;
-            font-size: 1.8rem;
-            font-weight: 600;
-            letter-spacing: 0.12em;
-            color: var(--zeus);
-            text-shadow: 0 0 40px #e8d06840;
-        }
-
-        .header-left .subtitle {
-            font-size: 0.68rem;
-            color: var(--text-secondary);
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            margin-top: 0.3rem;
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .live-indicator {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-        }
-
-        .live-dot {
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #4aff6a;
-            box-shadow: 0 0 8px #4aff6a;
-            animation: pulse-dot 2s ease-in-out infinite;
-        }
-
-        .live-dot.dead {
-            background: #ff4a4a;
-            box-shadow: 0 0 8px #ff4a4a;
-            animation: none;
-        }
-
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50%       { opacity: 0.4; transform: scale(0.8); }
-        }
-
-        .last-refresh {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-        }
-
-        .refresh-btn {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            color: var(--text-secondary);
-            padding: 0.4rem 1rem;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 0.7rem;
-            letter-spacing: 0.1em;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-        }
-
-        .refresh-btn:hover {
-            border-color: var(--zeus);
-            color: var(--zeus);
-            box-shadow: 0 0 16px #e8d06820;
-        }
-
-        /* ── SYSTEM TOTALS ── */
-        .system-totals {
-            display: grid;
-            grid-template-columns: repeat(8, 1fr);
-            gap: 0.75rem;
-            margin-bottom: 2rem;
-        }
-
-        .total-card {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            padding: 1rem 0.75rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            transition: border-color 0.3s;
-        }
-
-        .total-card::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: var(--god-color, var(--border));
-            opacity: 0.6;
-        }
-
-        .total-card:hover {
-            border-color: var(--god-color, var(--border-lit));
-        }
-
-        .total-card .num {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--god-color, var(--text-primary));
-            line-height: 1;
-        }
-
-        .total-card .lbl {
-            font-size: 0.6rem;
-            color: var(--text-secondary);
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            margin-top: 0.35rem;
-        }
-
-        .total-card.grand {
-            border-color: var(--border-lit);
-        }
-
-        .total-card.grand .num {
-            color: var(--text-primary);
-        }
-
-        /* ── BAND GRID ── */
-        .band-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1rem;
-            margin-bottom: 1rem;
-        }
-
-        .band-panel {
-            background: var(--bg-panel);
-            border: 1px solid var(--border);
-            padding: 1.25rem;
-            position: relative;
-            overflow: hidden;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-
-        .band-panel::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: var(--god-color, var(--border));
-            opacity: 0.7;
-        }
-
-        .band-panel.has-new {
-            box-shadow: 0 0 24px color-mix(in srgb, var(--god-color) 15%, transparent);
-            border-color: color-mix(in srgb, var(--god-color) 40%, var(--border));
-        }
-
-        .band-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 1rem;
-        }
-
-        .band-name {
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
-
-        .band-glyph {
-            font-size: 1.1rem;
-        }
-
-        .band-title {
-            font-family: 'Cinzel', serif;
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--god-color, var(--text-primary));
-            letter-spacing: 0.1em;
-        }
-
-        .band-subtitle {
-            font-size: 0.58rem;
-            color: var(--text-dim);
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-        }
-
-        .band-meta {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .band-count {
-            font-size: 1.1rem;
-            color: var(--god-color, var(--text-primary));
-            font-weight: 700;
-        }
-
-        .band-link {
-            font-size: 0.6rem;
-            color: var(--text-dim);
-            text-decoration: none;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            border: 1px solid var(--border);
-            padding: 0.2rem 0.5rem;
-            transition: all 0.2s;
-        }
-
-        .band-link:hover {
-            color: var(--god-color);
-            border-color: var(--god-color);
-        }
-
-        /* ── ENTRY LIST ── */
-        .entry-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.35rem;
-        }
-
-        .entry-row {
-            display: grid;
-            grid-template-columns: 2fr 1fr 80px;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.45rem 0.6rem;
-            background: var(--bg-card);
-            border: 1px solid transparent;
-            cursor: pointer;
-            transition: all 0.15s;
-            font-size: 0.72rem;
-        }
-
-        .entry-row:hover {
-            background: var(--bg-hover);
-            border-color: var(--god-color, var(--border));
-        }
-
-        .entry-row.is-new {
-            border-color: color-mix(in srgb, var(--god-color) 50%, transparent);
-            animation: flash-new 2s ease-out forwards;
-        }
-
-        @keyframes flash-new {
-            0%   { background: color-mix(in srgb, var(--god-color) 15%, var(--bg-card)); }
-            100% { background: var(--bg-card); }
-        }
-
-        .entry-body {
-            color: var(--text-primary);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .entry-wc {
-            color: var(--text-dim);
-            font-size: 0.62rem;
-            text-align: center;
-        }
-
-        .entry-wc span {
-            color: var(--god-color);
-        }
-
-        .entry-time {
-            color: var(--text-dim);
-            font-size: 0.6rem;
-            text-align: right;
-        }
-
-        .empty-band {
-            color: var(--text-dim);
-            font-size: 0.7rem;
-            padding: 1rem 0.5rem;
-            font-style: italic;
-            letter-spacing: 0.08em;
-        }
-
-        /* ── MODAL ── */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: #06081088;
-            backdrop-filter: blur(4px);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-overlay.open {
-            display: flex;
-        }
-
-        .modal {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-lit);
-            padding: 2rem;
-            max-width: 600px;
-            width: 90%;
-            position: relative;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-
-        .modal-close {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 1.2rem;
-            cursor: pointer;
-            font-family: monospace;
-        }
-
-        .modal-close:hover { color: var(--text-primary); }
-
-        .modal-god {
-            font-family: 'Cinzel', serif;
-            font-size: 0.7rem;
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            margin-bottom: 0.5rem;
-        }
-
-        .modal-body {
-            font-size: 1rem;
-            line-height: 1.7;
-            color: var(--text-primary);
-            margin: 1rem 0;
-            padding: 1rem;
-            background: var(--bg-card);
-            border-left: 2px solid var(--god-color, var(--border));
-        }
-
-        .modal-meta {
-            display: flex;
-            gap: 1.5rem;
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-        }
-
-        .modal-meta span { letter-spacing: 0.1em; }
-
-        /* ── STATUS BAR ── */
-        .status-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-top: 1.5rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--border);
-            font-size: 0.62rem;
-            color: var(--text-dim);
-            letter-spacing: 0.1em;
-        }
-
-        .status-left {
-            display: flex;
-            gap: 1.5rem;
-        }
-
-        /* ── SCROLLBAR ── */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: var(--bg-void); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-        /* ── LOADING SHIMMER ── */
-        .shimmer {
-            background: linear-gradient(90deg, var(--bg-card) 25%, var(--bg-hover) 50%, var(--bg-card) 75%);
-            background-size: 200% 100%;
-            animation: shimmer 1.4s infinite;
-            height: 32px;
-            border-radius: 2px;
-            margin-bottom: 0.35rem;
-        }
-
-        @keyframes shimmer {
-            0%   { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { font-size: 1.5rem; color: #d4956a; margin-bottom: 0.5rem; }
+        .sub { color: #6a7a8a; margin-bottom: 2rem; border-bottom: 1px solid #1e2535; padding-bottom: 0.5rem; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+        .stat-card { background: #0f141e; border: 1px solid #1e2535; border-radius: 0.5rem; padding: 1rem; text-align: center; }
+        .stat-number { font-size: 1.8rem; font-weight: bold; color: #d4956a; }
+        .stat-label { font-size: 0.65rem; color: #6a7a8a; text-transform: uppercase; }
+        .panel { background: #0b0e16; border: 1px solid #1e2535; border-radius: 0.5rem; padding: 1.2rem; margin-bottom: 1.5rem; }
+        .panel h2 { font-size: 0.9rem; margin-bottom: 1rem; padding-left: 0.5rem; border-left: 2px solid; }
+        .panel.hermes h2 { border-color: #d4956a; color: #d4956a; }
+        .panel.hephaestus h2 { border-color: #e07040; color: #e07040; }
+        .panel.demeter h2 { border-color: #6b8e23; color: #6b8e23; }
+        button { background: #1e2535; border: none; color: #d4e0ed; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.7rem; margin-right: 0.5rem; margin-bottom: 0.5rem; }
+        button:hover { background: #d4956a; color: #0a0c12; }
+        .status { font-size: 0.65rem; margin-top: 0.5rem; color: #6a7a8a; }
+        .log-area { background: #060810; border: 1px solid #1e2535; border-radius: 0.5rem; padding: 0.8rem; max-height: 150px; overflow-y: auto; font-size: 0.7rem; }
+        .log-entry { padding: 0.2rem 0; border-bottom: 1px solid #1a1f2a; color: #6a7a8a; }
+        .log-entry.success { color: #6b8e23; }
+        .recent-list { max-height: 200px; overflow-y: auto; font-size: 0.7rem; }
+        .recent-item { padding: 0.2rem 0; border-bottom: 1px solid #1a1f2a; }
+        hr { border-color: #1e2535; margin: 0.5rem 0; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+<div class="container">
+    <h1>Kairos Kernel</h1>
+    <div class="sub">Orchestrator · Hermes · Hephaestus · Demeter</div>
 
-<div class="wrapper">
-
-    <!-- HEADER -->
-    <header>
-        <div class="header-left">
-            <h1>⚡ KAIROS KERNEL</h1>
-            <div class="subtitle">Divine Dashboard · Read-Only · All 7 Bands</div>
-        </div>
-        <div class="header-right">
-            <div>
-                <div class="live-indicator">
-                    <div class="live-dot" id="liveDot"></div>
-                    <span id="liveStatus">connecting</span>
-                </div>
-                <div class="last-refresh" id="lastRefresh">—</div>
-            </div>
-            <button class="refresh-btn" id="refreshBtn">⟳ Refresh All</button>
-        </div>
-    </header>
-
-    <!-- SYSTEM TOTALS -->
-    <div class="system-totals" id="systemTotals">
-        <div class="total-card grand">
-            <div class="num" id="totalAll">—</div>
-            <div class="lbl">Total Entries</div>
-        </div>
-        <!-- God cards injected by JS -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-number" id="hermesCount">—</div><div class="stat-label">Hermes Words</div></div>
+        <div class="stat-card"><div class="stat-number" id="hephCount">—</div><div class="stat-label">Hephaestus Phrases</div></div>
+        <div class="stat-card"><div class="stat-number" id="demeterCount">—</div><div class="stat-label">Demeter Approved</div></div>
     </div>
 
-    <!-- BAND GRID -->
-    <div class="band-grid" id="bandGrid">
-        <!-- Panels injected by JS -->
+    <div class="panel hermes">
+        <h2>Hermes · Word Scraper</h2>
+        <button id="runHermes">Run Scrape</button>
+        <button id="pruneHermes">Prune Low Quality</button>
+        <div class="status" id="hermesStatus">Idle</div>
+        <div id="hermesRecent" class="recent-list">Loading...</div>
     </div>
 
-    <!-- STATUS BAR -->
-    <div class="status-bar">
-        <div class="status-left">
-            <span>KERNEL v0.1 · SKELETON</span>
-            <span id="dbStatus">db: —</span>
-            <span id="entryRate">entries/min: —</span>
-        </div>
-        <span id="buildStamp">kairos-coder.github.io/kernel</span>
+    <div class="panel hephaestus">
+        <h2>Hephaestus · Phrase Forge</h2>
+        <button id="runHephaestus">Forge Phrases</button>
+        <button id="clearHephaestus">Clear Phrases</button>
+        <div class="status" id="hephStatus">Idle</div>
+        <div id="hephRecent" class="recent-list">Loading...</div>
     </div>
 
-</div>
-
-<!-- ENTRY MODAL -->
-<div class="modal-overlay" id="modalOverlay">
-    <div class="modal" id="modalContent">
-        <button class="modal-close" id="modalClose">✕</button>
-        <div class="modal-god" id="modalGod"></div>
-        <div class="modal-body" id="modalBody"></div>
-        <div class="modal-meta" id="modalMeta"></div>
+    <div class="panel demeter">
+        <h2>Demeter · Quality Gate</h2>
+        <button id="approveAll">Approve High Quality (≥65)</button>
+        <div class="status" id="demeterStatus">Idle</div>
+        <div id="demeterRecent" class="recent-list">Loading...</div>
     </div>
+
+    <div class="log-area" id="logArea"><div class="log-entry">Kernel ready.</div></div>
 </div>
 
 <script>
-(function () {
-
-    const SUPABASE_URL     = 'https://kzcucjcyxybypncbdbws.supabase.co';
+(function() {
+    const SUPABASE_URL = 'https://kzcucjcyxybypncbdbws.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_saeUHGocDah-T2_709M6Fg_g26JtLXw';
+    let db = null;
 
-    // ── GOD CONFIG ──────────────────────────────────────────────────────────
-    const GODS = [
-        {
-            id: 'hermes',
-            name: 'Hermes',
-            glyph: '✈️',
-            table: 'hermes_entries',
-            color: '#d4956a',
-            subtitle: 'Primitives · 1–2 words',
-            link: 'https://kairos-coder.github.io/hermes',
-            linkLabel: '→ hermes'
-        },
-        {
-            id: 'apollo',
-            name: 'Apollo',
-            glyph: '🎯',
-            table: 'apollo_entries',
-            color: '#c9a84c',
-            subtitle: 'Syntax patterns · 3–5 words',
-            link: null,
-            linkLabel: '→ apollo'
-        },
-        {
-            id: 'hephaestus',
-            name: 'Hephaestus',
-            glyph: '🔥',
-            table: 'hephaestus_entries',
-            color: '#e07040',
-            subtitle: 'Repair layer · 6–8 words',
-            link: null,
-            linkLabel: '→ hephaestus'
-        },
-        {
-            id: 'demeter',
-            name: 'Demeter',
-            glyph: '🌾',
-            table: 'demeter_entries',
-            color: '#6b9e5e',
-            subtitle: 'Pruning queue · 9–12 words',
-            link: null,
-            linkLabel: '→ demeter'
-        },
-        {
-            id: 'poseidon',
-            name: 'Poseidon',
-            glyph: '🌊',
-            table: 'poseidon_entries',
-            color: '#4a8fbf',
-            subtitle: 'Depth expander · 13–20 words',
-            link: null,
-            linkLabel: '→ poseidon'
-        },
-        {
-            id: 'athena',
-            name: 'Athena',
-            glyph: '🦉',
-            table: 'athena_entries',
-            color: '#9b7ec8',
-            subtitle: 'Judgment review · 21–34 words',
-            link: null,
-            linkLabel: '→ athena'
-        },
-        {
-            id: 'zeus',
-            name: 'Zeus',
-            glyph: '⚡',
-            table: 'zeus_entries',
-            color: '#e8d068',
-            subtitle: 'Canonized · 35+ words',
-            link: null,
-            linkLabel: '→ zeus'
+    function addLog(msg, type) {
+        const log = document.getElementById('logArea');
+        const entry = document.createElement('div');
+        entry.className = 'log-entry ' + (type || 'info');
+        entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+        log.appendChild(entry);
+        entry.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function loadStats() {
+        if (!db) return;
+        const { count: hc } = await db.from('hermes_entries').select('*', { count: 'exact', head: true });
+        const { count: pc } = await db.from('hephaestus_phrases').select('*', { count: 'exact', head: true });
+        const { count: dc } = await db.from('demeter_approved').select('*', { count: 'exact', head: true });
+        document.getElementById('hermesCount').innerText = hc || 0;
+        document.getElementById('hephCount').innerText = pc || 0;
+        document.getElementById('demeterCount').innerText = dc || 0;
+    }
+
+    async function loadRecent() {
+        if (!db) return;
+        const { data: words } = await db.from('hermes_entries').select('body').order('created_at', { ascending: false }).limit(5);
+        document.getElementById('hermesRecent').innerHTML = words?.map(w => '<div class="recent-item">' + w.body + '</div>').join('') || '<div class="recent-item">No words</div>';
+        
+        const { data: phrases } = await db.from('hephaestus_phrases').select('phrase, score').order('created_at', { ascending: false }).limit(5);
+        document.getElementById('hephRecent').innerHTML = phrases?.map(p => '<div class="recent-item">' + p.phrase + ' (' + p.score + '%)</div>').join('') || '<div class="recent-item">No phrases</div>';
+        
+        const { data: approved } = await db.from('demeter_approved').select('phrase').order('created_at', { ascending: false }).limit(5);
+        document.getElementById('demeterRecent').innerHTML = approved?.map(a => '<div class="recent-item">' + a.phrase + '</div>').join('') || '<div class="recent-item">No approved</div>';
+    }
+
+    async function runHermes() {
+        addLog('Hermes: scraping...', 'info');
+        document.getElementById('hermesStatus').innerHTML = 'Scraping...';
+        // Simple scrape simulation
+        const response = await fetch('https://www.reddit.com/r/all/top.json?limit=10&t=day');
+        const data = await response.json();
+        const titles = data.data.children.map(c => c.data.title);
+        const words = titles.join(' ').toLowerCase().split(/\s+/).filter(w => w.length > 3 && w.length < 12).slice(0, 10);
+        let added = 0;
+        for (const w of words) {
+            const expires = new Date(); expires.setDate(expires.getDate() + 3);
+            const { error } = await db.from('hermes_entries').upsert({
+                body: w, label: 'reddit_' + w + '_' + Date.now(), word_count: 1,
+                word_type: 'noun', source: 'reddit', trending_score: 50, expires_at: expires.toISOString()
+            }, { onConflict: 'body,source' });
+            if (!error) added++;
         }
-    ];
+        addLog('Hermes added ' + added + ' words', 'success');
+        document.getElementById('hermesStatus').innerHTML = 'Ready (' + added + ' new)';
+        await loadStats();
+        await loadRecent();
+    }
 
-    let sb = null;
-    let bandData = {};     // { hermes: [...entries] }
-    let bandCounts = {};   // { hermes: 142 }
-    let prevCounts = {};
-    let refreshInterval = null;
+    async function pruneHermes() {
+        const { data } = await db.from('hermes_entries').delete().lt('trending_score', 35).select();
+        addLog('Pruned ' + (data?.length || 0) + ' low-quality words', 'info');
+        await loadStats();
+        await loadRecent();
+    }
 
-    // ── INIT ────────────────────────────────────────────────────────────────
-    async function init() {
-        if (!window.supabase) {
-            setLiveStatus(false, 'supabase missing');
-            return;
+    async function runHephaestus() {
+        addLog('Hephaestus: forging phrases...', 'info');
+        const { data: words } = await db.from('hermes_entries').select('body').gt('trending_score', 40).limit(20);
+        if (!words || words.length < 3) { addLog('Not enough words', 'warning'); return; }
+        await db.from('hephaestus_phrases').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const phrases = [];
+        const nouns = words.map(w => w.body);
+        for (let i = 0; i < 15; i++) {
+            const n1 = nouns[Math.floor(Math.random() * nouns.length)];
+            const n2 = nouns[Math.floor(Math.random() * nouns.length)];
+            const phrase = n1.charAt(0).toUpperCase() + n1.slice(1) + ' ' + n2;
+            phrases.push({ phrase: phrase, score: Math.floor(Math.random() * 50) + 30 });
         }
-
-        sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        buildTotalCards();
-        buildBandPanels();
-        bindModal();
-        bindRefresh();
-
-        await fetchAll();
-
-        // Auto-refresh every 30s
-        refreshInterval = setInterval(fetchAll, 30000);
+        let saved = 0;
+        for (const p of phrases) {
+            const exp = new Date(); exp.setDate(exp.getDate() + 7);
+            const { error } = await db.from('hephaestus_phrases').insert({ phrase: p.phrase, score: p.score, expires_at: exp.toISOString() });
+            if (!error) saved++;
+        }
+        addLog('Hephaestus forged ' + saved + ' phrases', 'success');
+        await loadStats();
+        await loadRecent();
     }
 
-    // ── BUILD STATIC STRUCTURE ───────────────────────────────────────────────
-    function buildTotalCards() {
-        const grid = document.getElementById('systemTotals');
-        GODS.forEach(god => {
-            const card = document.createElement('div');
-            card.className = 'total-card';
-            card.style.setProperty('--god-color', god.color);
-            card.innerHTML = `
-                <div class="num" id="total_${god.id}">—</div>
-                <div class="lbl">${god.name}</div>
-            `;
-            grid.appendChild(card);
-        });
+    async function clearHephaestus() {
+        await db.from('hephaestus_phrases').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        addLog('Cleared all phrases', 'info');
+        await loadStats();
+        await loadRecent();
     }
 
-    function buildBandPanels() {
-        const grid = document.getElementById('bandGrid');
-        GODS.forEach(god => {
-            const panel = document.createElement('div');
-            panel.className = 'band-panel';
-            panel.id = `panel_${god.id}`;
-            panel.style.setProperty('--god-color', god.color);
-            panel.innerHTML = `
-                <div class="band-header">
-                    <div class="band-name">
-                        <span class="band-glyph">${god.glyph}</span>
-                        <div>
-                            <div class="band-title">${god.name}</div>
-                            <div class="band-subtitle">${god.subtitle}</div>
-                        </div>
-                    </div>
-                    <div class="band-meta">
-                        <span class="band-count" id="count_${god.id}">—</span>
-                        ${god.link
-                            ? `<a class="band-link" href="${god.link}" target="_blank">${god.linkLabel}</a>`
-                            : `<span class="band-link" style="opacity:0.3;cursor:default">${god.linkLabel}</span>`
-                        }
-                    </div>
-                </div>
-                <div class="entry-list" id="entries_${god.id}">
-                    ${shimmerRows(5)}
-                </div>
-            `;
-            grid.appendChild(panel);
-        });
+    function scorePhrase(phrase) {
+        let score = 50;
+        const strong = ['ai', 'code', 'agent', 'model', 'data', 'cloud', 'intelligence', 'claude', 'openai'];
+        const weak = ['drug', 'turbo', 'paraloid', 'kash', 'patel', 'went', 'souls'];
+        const lower = phrase.toLowerCase();
+        for (const s of strong) if (lower.includes(s)) score += 10;
+        for (const w of weak) if (lower.includes(w)) score -= 15;
+        return Math.min(100, Math.max(0, score));
     }
 
-    function shimmerRows(n) {
-        return Array(n).fill('<div class="shimmer"></div>').join('');
-    }
-
-    // ── FETCH ────────────────────────────────────────────────────────────────
-    async function fetchAll() {
-        setLiveStatus(null, 'fetching...');
-
-        const results = await Promise.allSettled(
-            GODS.map(god => fetchBand(god))
-        );
-
-        let anyError = false;
-        results.forEach((result, i) => {
-            if (result.status === 'rejected') {
-                anyError = true;
-                console.error(`${GODS[i].id} fetch failed:`, result.reason);
+    async function approveAllHigh() {
+        addLog('Demeter: approving high-quality phrases...', 'info');
+        const { data: phrases } = await db.from('hephaestus_phrases').select('id, phrase');
+        if (!phrases) return;
+        let approved = 0;
+        for (const p of phrases) {
+            const score = scorePhrase(p.phrase);
+            if (score >= 65) {
+                const { error } = await db.from('demeter_approved').upsert({ phrase: p.phrase, original_id: p.id, affinity_score: score }, { onConflict: 'phrase' });
+                if (!error) approved++;
             }
-        });
-
-        updateTotals();
-        setLiveStatus(!anyError, anyError ? 'partial error' : 'live');
-        document.getElementById('lastRefresh').textContent =
-            'refreshed ' + new Date().toLocaleTimeString();
-        document.getElementById('dbStatus').textContent =
-            `db: ${SUPABASE_URL.split('//')[1].split('.')[0]}`;
-    }
-
-    async function fetchBand(god) {
-        // Get total count
-        const { count, error: countError } = await sb
-            .from(god.table)
-            .select('*', { count: 'exact', head: true });
-
-        if (countError) throw countError;
-
-        // Get latest 5 entries
-        const { data, error } = await sb
-            .from(god.table)
-            .select('id, label, body, word_count, created_at')
-            .order('created_at', { ascending: false })
-            .limit(5);
-
-        if (error) throw error;
-
-        // Detect new entries since last fetch
-        const wasCount = prevCounts[god.id] || 0;
-        const isNew = (count || 0) > wasCount && wasCount > 0;
-
-        prevCounts[god.id] = bandCounts[god.id] || 0;
-        bandCounts[god.id] = count || 0;
-        bandData[god.id] = data || [];
-
-        renderBand(god, data || [], count || 0, isNew);
-    }
-
-    // ── RENDER ───────────────────────────────────────────────────────────────
-    function renderBand(god, entries, count, hasNew) {
-        // Count
-        document.getElementById(`count_${god.id}`).textContent = count;
-        document.getElementById(`total_${god.id}`).textContent = count;
-
-        // New-entry highlight on panel
-        const panel = document.getElementById(`panel_${god.id}`);
-        if (hasNew) {
-            panel.classList.add('has-new');
-            setTimeout(() => panel.classList.remove('has-new'), 5000);
         }
-
-        // Entry list
-        const list = document.getElementById(`entries_${god.id}`);
-        if (entries.length === 0) {
-            list.innerHTML = `<div class="empty-band">no entries yet · waiting for data</div>`;
-            return;
-        }
-
-        list.innerHTML = entries.map((e, idx) => `
-            <div class="entry-row ${hasNew && idx === 0 ? 'is-new' : ''}"
-                 data-id="${e.id}"
-                 data-god="${god.id}"
-                 onclick="window.__kernelOpenModal('${god.id}', '${e.id}')">
-                <div class="entry-body" title="${escHtml(e.body || '')}">${escHtml(e.body || '—')}</div>
-                <div class="entry-wc"><span>${e.word_count || '?'}</span> words</div>
-                <div class="entry-time">${relTime(e.created_at)}</div>
-            </div>
-        `).join('');
+        addLog('Demeter approved ' + approved + ' phrases', 'success');
+        await loadStats();
+        await loadRecent();
     }
 
-    function updateTotals() {
-        const total = Object.values(bandCounts).reduce((a, b) => a + b, 0);
-        document.getElementById('totalAll').textContent = total || '—';
+    document.getElementById('runHermes').onclick = runHermes;
+    document.getElementById('pruneHermes').onclick = pruneHermes;
+    document.getElementById('runHephaestus').onclick = runHephaestus;
+    document.getElementById('clearHephaestus').onclick = clearHephaestus;
+    document.getElementById('approveAll').onclick = approveAllHigh;
+
+    async function init() {
+        if (!window.supabase) { addLog('Supabase not loaded', 'error'); return; }
+        db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        await loadStats();
+        await loadRecent();
+        addLog('Kernel ready', 'success');
     }
-
-    // ── MODAL ────────────────────────────────────────────────────────────────
-    function bindModal() {
-        const overlay = document.getElementById('modalOverlay');
-        const closeBtn = document.getElementById('modalClose');
-
-        closeBtn.addEventListener('click', () => overlay.classList.remove('open'));
-        overlay.addEventListener('click', e => {
-            if (e.target === overlay) overlay.classList.remove('open');
-        });
-        document.addEventListener('keydown', e => {
-            if (e.key === 'Escape') overlay.classList.remove('open');
-        });
-    }
-
-    window.__kernelOpenModal = function(godId, entryId) {
-        const god = GODS.find(g => g.id === godId);
-        const entry = (bandData[godId] || []).find(e => String(e.id) === String(entryId));
-        if (!entry || !god) return;
-
-        const overlay = document.getElementById('modalOverlay');
-        const modalContent = document.getElementById('modalContent');
-        modalContent.style.setProperty('--god-color', god.color);
-        modalContent.style.borderTopColor = god.color;
-
-        document.getElementById('modalGod').style.color = god.color;
-        document.getElementById('modalGod').textContent = `${god.glyph} ${god.name.toUpperCase()} · ${god.subtitle}`;
-        document.getElementById('modalBody').textContent = entry.body || '—';
-        document.getElementById('modalBody').style.borderLeftColor = god.color;
-
-        document.getElementById('modalMeta').innerHTML = `
-            <span>ID: ${entry.id}</span>
-            <span>WORDS: ${entry.word_count || '?'}</span>
-            <span>LABEL: ${escHtml(entry.label || '—')}</span>
-            <span>CREATED: ${entry.created_at ? new Date(entry.created_at).toLocaleString() : '—'}</span>
-        `;
-
-        overlay.classList.add('open');
-    };
-
-    // ── CONTROLS ─────────────────────────────────────────────────────────────
-    function bindRefresh() {
-        document.getElementById('refreshBtn').addEventListener('click', fetchAll);
-    }
-
-    // ── STATUS ───────────────────────────────────────────────────────────────
-    function setLiveStatus(ok, msg) {
-        const dot  = document.getElementById('liveDot');
-        const span = document.getElementById('liveStatus');
-        if (ok === null) {
-            dot.className = 'live-dot';
-            dot.style.background = '#c9a84c';
-            dot.style.boxShadow  = '0 0 8px #c9a84c';
-        } else if (ok) {
-            dot.className = 'live-dot';
-            dot.style.background = '';
-            dot.style.boxShadow  = '';
-        } else {
-            dot.className = 'live-dot dead';
-        }
-        span.textContent = msg;
-    }
-
-    // ── UTILS ─────────────────────────────────────────────────────────────────
-    function relTime(iso) {
-        if (!iso) return '—';
-        const diff = Date.now() - new Date(iso).getTime();
-        const s = Math.floor(diff / 1000);
-        if (s < 60)   return `${s}s ago`;
-        if (s < 3600) return `${Math.floor(s/60)}m ago`;
-        if (s < 86400) return `${Math.floor(s/3600)}h ago`;
-        return `${Math.floor(s/86400)}d ago`;
-    }
-
-    function escHtml(str) {
-        return String(str).replace(/[&<>"']/g, c => ({
-            '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-        }[c]));
-    }
-
-    // ── BOOT ──────────────────────────────────────────────────────────────────
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-
+    init();
 })();
 </script>
 </body>
